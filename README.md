@@ -12,7 +12,6 @@ native dependencies.
 Needs Node 20.12 or newer.
 
 ```bash
-cd agent-hq
 npm install
 cp .env.example .env      # then add your ANTHROPIC_API_KEY
 npm start                 # http://localhost:3000
@@ -43,8 +42,8 @@ Any host that runs a long-lived Node process with a **persistent disk** works (R
 Fly.io, a VPS). Serverless and "scale to zero" hosts do not: the night-shift scheduler needs the
 process to stay up, and the data file needs a real disk.
 
-1. Create a web service from this repo with root directory `agent-hq`, build command
-   `npm install`, start command `npm start`.
+1. Create a web service from this repo with build command `npm install` and start command
+   `npm start`.
 2. Attach a persistent disk (1 GB is plenty) and set `DATA_DIR` to its mount path, for example
    `/var/data`. Without this, every deploy wipes your team, leads and approvals.
 3. Set `ANTHROPIC_API_KEY`, `APP_PASSWORD`, `TZ`, and optionally `MODEL`.
@@ -108,8 +107,6 @@ is recorded, and any failure marks the run failed with the error.
 
 ## Choices I made
 
-- **Lives in `agent-hq/`**, separate from the storefront already in this repo, with its own
-  `package.json`.
 - **Model**: the default is `claude-opus-5-5`; `MODEL` overrides it. Web search is capped at 5
   searches per run. Fable, Opus and Sonnet agents use tool version `web_search_20260209`; any
   other model (including Haiku) gets the basic `web_search_20250305`, which every model accepts.
