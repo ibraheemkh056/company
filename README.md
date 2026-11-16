@@ -17,6 +17,20 @@ cp .env.example .env      # then add your ANTHROPIC_API_KEY
 npm start                 # http://localhost:3000
 ```
 
+### On a Mac: double-click the app
+
+`Agent HQ.app` in this folder is a launcher. Double-click it and it starts the server in the
+background and opens the page in your browser. The first launch installs dependencies (about a
+minute) and offers to save your API key into `.env`. Double-click it again while it is running to
+open the page or stop the server.
+
+- It needs Node.js installed (the app tells you if it is missing).
+- Keep the app inside this folder; drag it to the Dock for quick access rather than moving it.
+- If you downloaded the project as a ZIP instead of using `git clone`, macOS will refuse to open
+  it the first time. Open System Settings → Privacy & Security and click "Open Anyway", and move
+  the whole project folder out of Downloads first.
+- Its log is `data/agent-hq.log`.
+
 With no API key the app starts in **demo mode**: everything works, but runs return a clearly
 labelled placeholder and create no leads, notes or approvals.
 

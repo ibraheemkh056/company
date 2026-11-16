@@ -1,0 +1,106 @@
+#!/bin/bash
+# Agent HQ launcher for macOS.
+# Double-click the app: it starts the server in the background (first time it
+# also installs dependencies and offers to save your API key), then opens the
+# page in your browser. Double-click again while it is running to open or stop it.
+
+APP_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+TITLE="Agent HQ"
+
+dialog() { # dialog "message" -> shows one OK button
+  osascript -e 'on run argv' -e 'display dialog (item 1 of argv) buttons {"OK"} default button 1 with title "Agent HQ"' -e 'end run' "$1" >/dev/null 2>&1
+}
+notify() {
+  osascript -e 'on run argv' -e 'display notification (item 1 of argv) with title "Agent HQ"' -e 'end run' "$1" >/dev/null 2>&1
+}
+
+if [ ! -f "$APP_DIR/server.js" ]; then
+  dialog "Agent HQ.app has to stay inside the project folder (next to server.js). Move it back there and open it again."
+  exit 1
+fi
+cd "$APP_DIR" || exit 1
+mkdir -p data
+LOG="$APP_DIR/data/agent-hq.log"
+PIDFILE="$APP_DIR/data/agent-hq.pid"
+
+# Apps started from Finder get a bare PATH, so look where Node usually lives.
+export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.volta/bin:$HOME/.fnm/aliases/default/bin:$PATH"
+if ! command -v node >/dev/null 2>&1 && [ -s "$HOME/.nvm/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  dialog "Agent HQ needs Node.js, which is not installed on this Mac. Download the LTS installer from nodejs.org, run it, then open Agent HQ again."
+  open "https://nodejs.org/en/download" 2>/dev/null
+  exit 1
+fi
+if ! node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>20||(a===20&&b>=12)?0:1)'; then
+  dialog "Agent HQ needs Node.js 20.12 or newer, and this Mac has $(node -v). Install the current LTS from nodejs.org, then open Agent HQ again."
+  exit 1
+fi
+
+PORT="$(sed -n 's/^PORT=\([0-9][0-9]*\).*/\1/p' .env 2>/dev/null | tail -1)"
+PORT="${PORT:-3000}"
+URL="http://localhost:$PORT"
+is_up() { curl -fs -m 2 "$URL/healthz" 2>/dev/null | grep -q '"ok":true'; }
+
+# Already running: offer to open it or stop it.
+if is_up; then
+  CHOICE="$(osascript -e 'display dialog "Agent HQ is running." buttons {"Stop Agent HQ", "Open"} default button "Open" with title "Agent HQ"' -e 'button returned of result' 2>/dev/null)"
+  if [ "$CHOICE" = "Stop Agent HQ" ]; then
+    PID="$(cat "$PIDFILE" 2>/dev/null)"
+    if [ -n "$PID" ] && kill "$PID" 2>/dev/null; then
+      rm -f "$PIDFILE"
+      notify "Agent HQ stopped."
+    else
+      dialog "Agent HQ is running, but this app did not start it (perhaps from Terminal), so it has to be stopped there."
+    fi
+  elif [ "$CHOICE" = "Open" ]; then
+    open "$URL"
+  fi
+  exit 0
+fi
+
+# First launch: install dependencies.
+if [ ! -d node_modules ]; then
+  notify "First launch: installing, this takes about a minute…"
+  if ! npm install --no-audit --no-fund >>"$LOG" 2>&1; then
+    dialog "Installing Agent HQ failed. Check your internet connection and open the app again. Details are in data/agent-hq.log inside the project folder."
+    exit 1
+  fi
+fi
+
+# First launch: create .env and offer to save the API key.
+if [ ! -f .env ]; then
+  cp .env.example .env
+  KEY="$(osascript -e 'display dialog "Paste your Anthropic API key to run agents for real.\n\nLeave it empty to start in demo mode. You can add it later in the .env file in the project folder." default answer "" with hidden answer buttons {"Continue"} default button 1 with title "Agent HQ"' -e 'text returned of result' 2>/dev/null)"
+  KEY="$(printf '%s' "$KEY" | tr -d '[:space:]')"
+  if [ -n "$KEY" ]; then
+    if printf '%s' "$KEY" | grep -Eq '^[A-Za-z0-9_-]+$'; then
+      sed -i '' "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$KEY|" .env 2>/dev/null || sed -i "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$KEY|" .env
+      chmod 600 .env
+    else
+      dialog "That did not look like an API key, so it was not saved. Agent HQ will start in demo mode; add the key to the .env file later."
+    fi
+  fi
+fi
+
+# Start the server detached, so it keeps running after this launcher exits.
+nohup node server.js >>"$LOG" 2>&1 &
+echo $! >"$PIDFILE"
+
+for _ in $(seq 1 40); do
+  if is_up; then
+    open "$URL"
+    exit 0
+  fi
+  if ! kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then break; fi
+  sleep 0.5
+done
+
+rm -f "$PIDFILE"
+dialog "Agent HQ did not start. The last lines of its log:
+
+$(tail -n 6 "$LOG" 2>/dev/null)"
+exit 1
