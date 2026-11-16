@@ -1,0 +1,16 @@
+{
+  "name": "agent-hq",
+  "version": "1.0.0",
+  "description": "Self-hosted org chart of AI agents with a human approval gate",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=20.12" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "express": "^4.21.2"
+  }
+}

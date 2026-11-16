@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<title>Agent HQ</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f5b84a'/%3E%3Cpath d='M16 6v8M8 26v-6h16v6M16 14v6' stroke='%230e1116' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"></span>
+    <div>
+      <h1>Agent HQ</h1>
+      <p id="holding" class="muted"></p>
+    </div>
+  </div>
+  <div id="live" class="live" hidden><span class="dot running"></span><span id="live-text"></span></div>
+</header>
+
+<div id="demo-banner" class="banner" hidden>
+  <strong>Demo mode.</strong> No ANTHROPIC_API_KEY is set, so runs return a labelled placeholder and create no leads or approvals.
+</div>
+
+<nav class="tabs" id="tabs" aria-label="Sections">
+  <button data-tab="team" class="active">Team</button>
+  <button data-tab="approvals">Approvals <span id="badge" class="badge" hidden></span></button>
+  <button data-tab="leads">Leads</button>
+  <button data-tab="brain">Brain</button>
+  <button data-tab="activity">Activity</button>
+  <button data-tab="settings">Settings</button>
+</nav>
+
+<main>
+  <section id="tab-team"></section>
+  <section id="tab-approvals" hidden></section>
+  <section id="tab-leads" hidden></section>
+  <section id="tab-brain" hidden></section>
+  <section id="tab-activity" hidden></section>
+  <section id="tab-settings" hidden></section>
+</main>
+
+<div id="modal" class="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div id="sheet"></div>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
